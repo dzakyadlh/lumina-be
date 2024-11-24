@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "users.apps.UsersConfig",
     "likes.apps.LikesConfig",
+    "movies.apps.MoviesConfig",
 ]
 
 MIDDLEWARE = [
@@ -158,6 +159,6 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
-        'TIMEOUT':300,
+        'TIMEOUT':1800,
     }
 }
