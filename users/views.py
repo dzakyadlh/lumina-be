@@ -5,6 +5,7 @@ from .serializers import CustomUserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
+from .models import CustomUser
 
 @api_view(['POST'])
 def signup(request):
@@ -19,19 +20,23 @@ def signup(request):
 
 @api_view(['POST'])
 def signin(request):
-    username = request.data.get('username')
+    email = request.data.get('email')
     password = request.data.get('password')
 
-    user = authenticate(request, username=username, password=password)
+    try:
+        user = CustomUser.objects.get(email=email)
+    except CustomUser.DoesNotExist:
+        return Response({'message': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if user is not None:
+    if user.check_password(password):
         refresh = RefreshToken.for_user(user)
+        user_data = CustomUserSerializer(user).data
         return Response({
             'message':'Login success',
-            'data':user,
+            'data':user_data,
             'refresh': str(refresh),
             'access': str(refresh.access_token),
-        })
+        }, status=status.HTTP_200_OK)
     else:
         return Response({'message':'Invalid credentials'}, status=400)
     

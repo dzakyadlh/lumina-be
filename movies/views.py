@@ -33,23 +33,27 @@ class FetchMoviesView(APIView):
                     url = f"{url}/titles/{movie_id}?info=base_info"
                     data = self.process_movie(url)
                 else:
-                    url = f"{self.base_url}/titles"
-                    query_params = {
-                        "endYear": current_year,
-                        "page": page,
-                        "titleType": title_type if title_type else "movie",
-                        "sort": "year.incr" if title_search else None,
-                        "list": self.get_list_type(param),
-                    }
-                    # Add filters
-                    if title_search:
-                        url = f"{self.base_url}/titles/search/title/{title_search}?exact=false&info=base_info"
-                    if genre:
-                        query_params["genre"] = genre
-                    
-                    # Append query parameters
-                    url += self.build_query_string(query_params)
-                    data = self.process_movies(url)
+                    if param != 'latest':
+                        url = f"{url}/titles/random?limit=10&list={self.get_list_type(param)}"
+                        data = self.process_movies(url)
+                    else:
+                        url = f"{self.base_url}/titles"
+                        query_params = {
+                            "endYear": current_year,
+                            "page": page,
+                            "titleType": title_type if title_type else "movie",
+                            "sort": "year.incr" if title_search else None,
+                            "list": self.get_list_type(param),
+                        }
+                        # Add filters
+                        if title_search:
+                            url = f"{self.base_url}/titles/search/title/{title_search}?exact=false&info=base_info"
+                        if genre:
+                            query_params["genre"] = genre
+                        
+                        # Append query parameters
+                        url += self.build_query_string(query_params)
+                        data = self.process_movies(url)
                 if data is None:
                     return Response(
                         {'message': 'Movies not found',},
@@ -68,7 +72,19 @@ class FetchMoviesView(APIView):
         headers = {'X-RapidAPI-Key':'5f86fd7d25msh82389c264fed047p12a461jsn31581c0b17f1','X-RapidAPI-Host': 'moviesdatabase.p.rapidapi.com'}
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        data = response.json().get('results', {})
+        movie = response.json().get('results', {})
+        data = {
+            "movie_id": movie.get("id", None),
+            "title": movie.get("titleText", {}).get("text", "Unknown Title"),
+            "imageUrl": movie.get("primaryImage").get("url") if movie.get("primaryImage") else None,
+            "releaseYear": movie.get("releaseYear", {}).get("year", None) if movie.get("releaseYear") else None,
+            "plot": movie.get("plot", {}).get("plotText", {}).get("plainText", None) if movie.get("plot") else None,
+            "genres": movie.get("genres", {}).get("genres", []) if movie.get("genres") else None,
+            "stars": movie.get("primaryImage", {}).get("caption", {}).get("plainText", None) if movie.get("primaryImage") else None,
+            "rating":movie.get("ratingsSummary", {}).get("aggregateRating", None) if movie.get("ratingsSummary") else None,
+            "runtime":movie.get("runtime", {}).get("displayableProperty", {}).get("value", {}).get("plainText", None) if movie.get("runtime") else None,
+            "episodes":movie.get("episodes", {}) if movie.get("episodes") else None,
+        }
         return data
     
     def process_movies(self, url):
@@ -83,8 +99,7 @@ class FetchMoviesView(APIView):
                 "movie_id": movie.get("id", None),
                 "title": movie.get("titleText", {}).get("text", "Unknown Title"),
                 "imageUrl": movie.get("primaryImage").get("url") if movie.get("primaryImage") else None,
-                "releaseYear": movie.get("releaseYear", {}).get("year", None),
-                "category": movie.get("titleType", {}).get("categories", [{}])[0].get("value", "Unknown Category"),
+                "releaseYear": movie.get("releaseYear", {}).get("year", None) if movie.get("releaseYear") else None,
                 "is_series": movie.get("titleType", {}).get("isSeries", False),
             })
 
@@ -100,6 +115,7 @@ class FetchMoviesView(APIView):
             "latest": None,
             "trending": "top_boxoffice_last_weekend_10",
             "popular": "top_boxoffice_200",
+            "popularSeries": "top_rated_series_250"
         }
         return lists.get(param, None)
         
