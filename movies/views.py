@@ -3,10 +3,9 @@ from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Movies
-from .serializers import MoviesSerializer
 import datetime
 import hashlib
+from django.conf import settings
 
 class FetchMoviesView(APIView):
     base_url = 'https://moviesdatabase.p.rapidapi.com'
@@ -108,7 +107,7 @@ class FetchMoviesView(APIView):
         return Response({'message':'Movies data fetched', 'data':data,}, status=status.HTTP_200_OK)
     
     def process_movie(self, url):
-        headers = {'X-RapidAPI-Key':'5f86fd7d25msh82389c264fed047p12a461jsn31581c0b17f1','X-RapidAPI-Host': 'moviesdatabase.p.rapidapi.com'}
+        headers = {'X-RapidAPI-Key': settings.RAPIDAPI_KEY,'X-RapidAPI-Host': 'moviesdatabase.p.rapidapi.com'}
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         movie = response.json().get('results', {})
@@ -127,7 +126,7 @@ class FetchMoviesView(APIView):
         return data
     
     def process_movies(self, url):
-        headers = {'X-RapidAPI-Key':'5f86fd7d25msh82389c264fed047p12a461jsn31581c0b17f1','X-RapidAPI-Host': 'moviesdatabase.p.rapidapi.com'}
+        headers = {'X-RapidAPI-Key':settings.RAPIDAPI_KEY,'X-RapidAPI-Host': 'moviesdatabase.p.rapidapi.com'}
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         movies_data = response.json().get('results', [])
